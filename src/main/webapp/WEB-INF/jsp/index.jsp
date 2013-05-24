@@ -14,7 +14,50 @@
 
                 google.setOnLoadCallback(drawChart);
 
+                if (!!window.EventSource) {
+                   console.log("Event source available");
+                   var source = new EventSource('stats/logged-in');
 
+                   source.addEventListener('message', function(e) {
+                        if(e.data) {
+                            console.log(e.data);
+                            var list = JSON.parse(e.data);
+                            $("#logged-id").children().remove();
+
+                            if(list.length === 0) {
+                                $("#logged-id").append("<h2>No players logged in at the moment</h2>");
+                            } else {
+                                var table = $("<table><tbody></tbody></table>");
+                                var headRow = $("<thead></thead>").append("<tr><th>Player</th></tr>");
+                                var bodyRows = $("<tbody></tbody>");
+
+                                for(var i in list) {
+
+                                    bodyRows.append("<tr><td>"+list[i].screenName+"</td></tr>");
+
+                                }
+
+                                table.append(headRow).append(bodyRows);
+
+                                $("#logged-id").append(table);
+                            }
+                        }
+                   });
+
+                   source.addEventListener('open', function(e) {
+                        console.log("Connection was opened.");
+                   }, false);
+
+                   source.addEventListener('error', function(e) {
+                        if (e.readyState == EventSource.CLOSED) {
+                            console.log("Connection was closed.");
+                        } else {
+                            console.log(e.readyState);
+                        }
+                   }, false);
+                } else {
+                        console.log("No SSE available");
+                }
 
                 $.ajax("/minecraft-stats/stats/running", {
                     type: 'POST',
@@ -32,7 +75,13 @@
                     }
 
                 });
+
+
+
             });
+
+
+
             function drawChart() {
                 $.ajax("/minecraft-stats/stats/frequency", {
 
@@ -104,7 +153,8 @@
 
                 </div>
                 <hr />
-                <div class="center-80">
+                <div id="test"></div>
+                <div id="logged-id" class="center-80">
                     <c:choose>
                         <c:when test="${!list.isEmpty()}">
                             <table>
@@ -123,11 +173,11 @@
                             </table>
                         </c:when>
                         <c:otherwise>
-                        <h2>No players logged in at the moment</h2>
+                            <h2>No players logged in at the moment</h2>
                         </c:otherwise>
-                      </c:choose>
+                    </c:choose>
                 </div>
-                <div id="chart_div" style="margin: 100px auto; width: 100%; height: 250px;"></div>
+                <div id="chart_div" style="width: 100%; height: 250px; position: absolute; bottom: 0;"></div>
             </article>
         </section>
     </body>

@@ -1,7 +1,6 @@
 package com.drleinbach.minecraftstats.dao;
 
 import com.drleinbach.minecraftstats.beans.ServerVisit;
-import com.drleinbach.model.AllPlayerStatus;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -11,7 +10,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Unit test to be performed on a local database that ensures the
@@ -30,14 +30,6 @@ public class AllPlayerStatusDAOImplTest {
     @Autowired
     private AllPlayerStatusDAO playerStatusDAO;
 
-    @Test
-    public void testGetLoggedIn() throws Exception {
-
-        List<AllPlayerStatus> allPlayerStatusList = playerStatusDAO.getLoggedIn();
-        assertEquals(1, allPlayerStatusList.size());
-        assertEquals("stealthg0d", allPlayerStatusList.get(0).getScreenName());
-
-    }
 
     @Test
     public void testGetServerVistits() throws Exception {

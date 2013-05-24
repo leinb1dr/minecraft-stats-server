@@ -32,6 +32,7 @@ nav ul {
 }
 body {
     font-family: courier new;
+    font-size: 12px;
     background-color: black;
     background-image:url('../image/mc-background.png');
     color: whitesmoke;

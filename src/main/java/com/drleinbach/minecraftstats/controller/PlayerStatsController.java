@@ -1,20 +1,27 @@
 package com.drleinbach.minecraftstats.controller;
 
+import com.drleinbach.minecraftstats.beans.FullStats;
 import com.drleinbach.minecraftstats.beans.ServerVisit;
 import com.drleinbach.minecraftstats.dao.AllPlayerStatusDAO;
+import com.drleinbach.model.AllPlayerStatus;
 import org.apache.log4j.Logger;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.annotation.adapters.HexBinaryAdapter;
+import java.io.PrintWriter;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * This controller is used to handle requests for data
@@ -29,6 +36,17 @@ import java.util.List;
 public class PlayerStatsController {
 
     private static final Logger LOGGER = Logger.getLogger(PlayerStatsController.class);
+    private static final Properties properties = new Properties();
+    private static String handshake;
+
+    static {
+        try {
+            properties.load(new ClassPathResource("minecraft.properties").getInputStream());
+        } catch (Exception e) {
+
+        }
+    }
+
 
     /**
      * Data access object used to get users stats.
@@ -36,6 +54,34 @@ public class PlayerStatsController {
      */
     @Autowired
     private AllPlayerStatusDAO statsDAO;
+
+    @RequestMapping(value = "/logged-in")
+    public void getLoggedIn(HttpServletResponse response) {
+        LOGGER.info("Start getLoggedIn");
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("text/event-stream");
+        response.setHeader("Cache-Control", "no-cache");
+
+        List<AllPlayerStatus> players = statsDAO.getLoggedIn();
+        LOGGER.info("Got Logged In Users");
+
+        ObjectMapper om = new ObjectMapper();
+
+        try {
+            PrintWriter writer = response.getWriter();
+            writer.write("retry: 30000\n");
+            writer.write("data:" + om.writeValueAsString(players) + "\n\n");
+            writer.flush();
+            writer.close();
+
+        } catch (Exception e) {
+            LOGGER.error("Exception has occurred", e);
+        } finally {
+            LOGGER.info("End getLoggedIn");
+        }
+
+
+    }
 
     /**
      * Handles a POST request to the get the frequency of logged in users.
@@ -65,46 +111,69 @@ public class PlayerStatsController {
     @RequestMapping(value = "/running", method = RequestMethod.POST)
     @ResponseBody
     public Object getActiveStatus() {
-        DatagramSocket serverSocket = null;
+
         try {
-            serverSocket = new DatagramSocket(9876);
-            serverSocket.setSoTimeout(10);
-            byte[] receiveData = new byte[512];
-            final HexBinaryAdapter adapter = new HexBinaryAdapter();
 
-
-            final String magic = "FEFD";
-            final String type_hs = "09";
-            final String session_id = "00000001";
-
-            final String tmp = magic + type_hs + session_id;
-            LOGGER.debug("Handshake Dump: " + tmp);
-            final byte[] sendData = adapter.unmarshal(tmp);
-
-            final InetAddress mcServer = InetAddress.getByName("localhost");
+            String message = getHandshake();
+            LOGGER.debug("Handshake Dump: " + message);
 
             LOGGER.debug("Send handshake");
-            final DatagramPacket handshake = new DatagramPacket(sendData, sendData.length, mcServer, 25565);
+            final byte[] challengeResponse = getResponse(message);
             LOGGER.debug("Recieve challenge");
+            final String challenge = Integer.toHexString(Integer.parseInt(new String(challengeResponse).trim()));
 
-            final DatagramPacket response = new DatagramPacket(receiveData, receiveData.length);
-
-
-            serverSocket.send(handshake);
-            serverSocket.receive(response);
-
+            message = getStatsQuery(challenge);
+            final byte[] query = getResponse(message);
+            FullStats.getFullStats(new String(query).trim().split("\0"));
             return true;
 
         } catch (SocketTimeoutException e) {
             LOGGER.error("Socket timed out");
         } catch (Exception e) {
             LOGGER.error("Exception has occurred", e);
-        } finally {
-            if(serverSocket != null)
-                serverSocket.close();
         }
 
         return false;
+    }
+
+    private String getHandshake() {
+        if (handshake == null) {
+            handshake = properties.getProperty("server.query.magic")
+                    + properties.getProperty("server.query.hand-shake")
+                    + properties.getProperty("server.query.session-id");
+        }
+        return handshake;
+    }
+
+    private String getStatsQuery(String challenge) {
+        return properties.getProperty("server.query.magic")
+                + properties.getProperty("server.query.request")
+                + properties.getProperty("server.query.session-id")
+                + "00" + challenge + "00000000";
+    }
+
+    private byte[] getResponse(final String message) throws Exception {
+        final Integer socket = (int)(Math.random()*1000 + 9000);
+        final DatagramSocket serverSocket = new DatagramSocket(socket);
+        serverSocket.setSoTimeout(10);
+
+        final HexBinaryAdapter adapter = new HexBinaryAdapter();
+
+        final byte[] receiveData = new byte[512];
+        final byte[] sendData = adapter.unmarshal(message);
+
+        final InetAddress mcServer = InetAddress.getByName(properties.getProperty("server.query.ip"));
+
+        final DatagramPacket request = new DatagramPacket(sendData, sendData.length, mcServer, 25565);
+        final DatagramPacket response = new DatagramPacket(receiveData, receiveData.length);
+
+        serverSocket.send(request);
+        serverSocket.receive(response);
+
+        serverSocket.close();
+
+        return response.getData();
+
     }
 
 }

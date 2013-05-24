@@ -1,12 +1,13 @@
 package com.drleinbach.minecraft.query;
 
+import com.drleinbach.minecraftstats.beans.FullStats;
 import org.apache.log4j.Logger;
+import org.junit.Test;
 
 import javax.xml.bind.annotation.adapters.HexBinaryAdapter;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.util.Arrays;
 
 /**
  * Created: 5/3/13
@@ -17,13 +18,12 @@ public class QueryTest {
 
     private static final Logger LOGGER = Logger.getLogger(QueryTest.class);
 
-    //    @Test
+    @Test
     public void testQuery() throws Exception {
 
         DatagramSocket serverSocket = new DatagramSocket(9876);
         byte[] receiveData = new byte[1024];
         HexBinaryAdapter adapter = new HexBinaryAdapter();
-
 
         String magic = "FEFD";
         String type_hs = "09";
@@ -65,21 +65,7 @@ public class QueryTest {
         serverSocket.send(query);
         serverSocket.receive(response);
 
-        System.out.println(Arrays.toString(new String(response.getData()).trim().split("\0")));
-
-
-//
-//        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-//        serverSocket.receive(receivePacket);
-//        String sentence = new String(receivePacket.getData());
-//        System.out.println("RECEIVED: " + sentence);
-//        InetAddress IPAddress = receivePacket.getAddress();
-//        int port = receivePacket.getPort();
-//        String capitalizedSentence = sentence.toUpperCase();
-//        sendData = capitalizedSentence.getBytes();
-//        DatagramPacket sendPacket =
-//                new DatagramPacket(sendData, sendData.length, IPAddress, port);
-//        serverSocket.send(sendPacket);
+        System.out.println(FullStats.getFullStats(new String(response.getData()).trim().split("\0")));
 
 
     }
