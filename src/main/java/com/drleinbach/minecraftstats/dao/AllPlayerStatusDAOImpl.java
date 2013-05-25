@@ -28,7 +28,7 @@ public class AllPlayerStatusDAOImpl extends JdbcDaoSupport implements Serializab
     /**
      * Logger, used to record diagnostic information
      */
-    private static Logger LOGGER = Logger.getLogger(AllPlayerStatusDAOImpl.class);
+    private static final Logger LOGGER = Logger.getLogger(AllPlayerStatusDAOImpl.class);
 
     /**
      * Query string for finding the logged in users.

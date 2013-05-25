@@ -44,11 +44,13 @@ public class HomeController {
      */
     @RequestMapping(method = RequestMethod.GET)
     public ModelAndView getHome() {
+        LOGGER.debug("HomeController.getHome Start");
         List<AllPlayerStatus> players = statsDAO.getLoggedIn();
-        System.out.println("Result of Query: " + players.size());
+        LOGGER.debug("Result of Query: " + players.size());
         for (int i = 0; i < players.size(); i++) {
-            System.out.println(players.get(i));
+            LOGGER.debug(players.get(i));
         }
+        LOGGER.debug("HomeController.getHome End");
         return new ModelAndView("index", "list", players);
     }
 }

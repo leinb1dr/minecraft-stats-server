@@ -83,7 +83,8 @@ public class DefaultRowMapper<T> implements RowMapper<T> {
                 boolean inAccessable = false;
                 // If the field is private set it too accessible
                 if (!field.isAccessible()) {
-                    field.setAccessible(inAccessable = true);
+                    inAccessable = true;
+                    field.setAccessible(inAccessable);
                 }
                 try {
 
@@ -91,13 +92,15 @@ public class DefaultRowMapper<T> implements RowMapper<T> {
                     if (column.name().isEmpty()) {
                         field.set(mappedObject, resultSet.getObject(field.getName()));
 
-                    } else { // alternative column name was provided for field
+                        // alternative column name was provided for field
+                    } else {
                         field.set(mappedObject, resultSet.getObject(column.name()));
                     }
                 } catch (Exception e) {
                     LOGGER.error("Exception has occurred", e);
                 } finally {
-                    if (inAccessable) { // Return field to original state
+                    // Return field to original state
+                    if (inAccessable) {
                         field.setAccessible(false);
                     }
                 }

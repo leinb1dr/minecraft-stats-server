@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.annotation.adapters.HexBinaryAdapter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -36,12 +37,12 @@ import java.util.Properties;
 public class PlayerStatsController {
 
     private static final Logger LOGGER = Logger.getLogger(PlayerStatsController.class);
-    private static final Properties properties = new Properties();
+    private static final Properties PROPERTIES = new Properties();
     private static String handshake;
 
     static {
         try {
-            properties.load(new ClassPathResource("minecraft.properties").getInputStream());
+            PROPERTIES.load(new ClassPathResource("minecraft.properties").getInputStream());
         } catch (Exception e) {
 
         }
@@ -100,7 +101,6 @@ public class PlayerStatsController {
             LOGGER.error("Exception has occurred", e);
         }
         return null;
-//        return null;
     }
 
     /**
@@ -138,22 +138,22 @@ public class PlayerStatsController {
 
     private String getHandshake() {
         if (handshake == null) {
-            handshake = properties.getProperty("server.query.magic")
-                    + properties.getProperty("server.query.hand-shake")
-                    + properties.getProperty("server.query.session-id");
+            handshake = PROPERTIES.getProperty("server.query.magic")
+                    + PROPERTIES.getProperty("server.query.hand-shake")
+                    + PROPERTIES.getProperty("server.query.session-id");
         }
         return handshake;
     }
 
     private String getStatsQuery(String challenge) {
-        return properties.getProperty("server.query.magic")
-                + properties.getProperty("server.query.request")
-                + properties.getProperty("server.query.session-id")
+        return PROPERTIES.getProperty("server.query.magic")
+                + PROPERTIES.getProperty("server.query.request")
+                + PROPERTIES.getProperty("server.query.session-id")
                 + "00" + challenge + "00000000";
     }
 
-    private byte[] getResponse(final String message) throws Exception {
-        final Integer socket = (int)(Math.random()*1000 + 9000);
+    private byte[] getResponse(final String message) throws IOException {
+        final Integer socket = (int) (Math.random() * 1000 + 9000);
         final DatagramSocket serverSocket = new DatagramSocket(socket);
         serverSocket.setSoTimeout(10);
 
@@ -162,7 +162,7 @@ public class PlayerStatsController {
         final byte[] receiveData = new byte[512];
         final byte[] sendData = adapter.unmarshal(message);
 
-        final InetAddress mcServer = InetAddress.getByName(properties.getProperty("server.query.ip"));
+        final InetAddress mcServer = InetAddress.getByName(PROPERTIES.getProperty("server.query.ip"));
 
         final DatagramPacket request = new DatagramPacket(sendData, sendData.length, mcServer, 25565);
         final DatagramPacket response = new DatagramPacket(receiveData, receiveData.length);

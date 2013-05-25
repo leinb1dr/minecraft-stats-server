@@ -1,7 +1,5 @@
 package com.drleinbach.minecraftstats.beans;
 
-import org.apache.log4j.Logger;
-
 import javax.persistence.Column;
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -21,11 +19,6 @@ public class ServerVisitImpl implements ServerVisit, Serializable {
      * Version of the object
      */
     private static final long serialVersionUID = 1L;
-
-    /**
-     * Logger, used to record diagnostic information
-     */
-    private static final Logger LOGGER = Logger.getLogger(ServerVisitImpl.class);
 
     /**
      * The time range for the database record

@@ -13,12 +13,13 @@ import java.util.Map;
  *
  * @author Daniel
  */
-public class FullStats {
+public final class FullStats {
 
     private static final Logger LOGGER = Logger.getLogger(FullStats.class);
 
     public static FullStats getFullStats(String[] serverResponse) {
 
+        LOGGER.debug("FullStats.getFullStats Start");
         FullStats stats = new FullStats();
         int x = 0;
         for (x = 2; x < serverResponse.length; x += 2) {
@@ -34,6 +35,8 @@ public class FullStats {
         for (; x < serverResponse.length; x++) {
             stats.addPlayer(serverResponse[x]);
         }
+
+        LOGGER.debug("FullStats.getFullStats End");
 
         return stats;
 
