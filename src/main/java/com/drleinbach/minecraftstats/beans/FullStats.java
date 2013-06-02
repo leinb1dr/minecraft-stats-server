@@ -80,6 +80,34 @@ public final class FullStats {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        FullStats fullStats = (FullStats) o;
+
+        if (players != null ? !players.equals(fullStats.players) : fullStats.players != null) {
+            return false;
+        }
+        if (serverValues != null ? !serverValues.equals(fullStats.serverValues) : fullStats.serverValues != null) {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = serverValues != null ? serverValues.hashCode() : 0;
+        result = 31 * result + (players != null ? players.hashCode() : 0);
+        return result;
+    }
+
+    @Override
     public String toString() {
         ObjectMapper serializer = new ObjectMapper();
         try{

@@ -16,9 +16,9 @@
 
                 if (!!window.EventSource) {
                    console.log("Event source available");
-                   var source = new EventSource('stats/logged-in');
+                   var source = new EventSource('stats/sse');
 
-                   source.addEventListener('message', function(e) {
+                   source.addEventListener('running', function(e) {
                         if(e.data) {
                             console.log(e.data);
                             var list = JSON.parse(e.data);
@@ -42,6 +42,20 @@
                                 $("#logged-id").append(table);
                             }
                         }
+                   });
+
+                   source.addEventListener('running', function(e) {
+                       if(e.data) {
+                           var started = e.data;
+
+                           if(started) {
+
+                               $("#status").css("color", "rgb(98, 139, 93)").text("Running");
+
+                           } else {
+                               $("#status").css("color", "rgb(139, 93, 93)").text("Down");
+                           }
+                       }
                    });
 
                    source.addEventListener('open', function(e) {
@@ -76,13 +90,6 @@
 
                 });
 
-
-
-            });
-
-
-
-            function drawChart() {
                 $.ajax("/minecraft-stats/stats/frequency", {
 
                     type : 'POST',
@@ -90,48 +97,57 @@
                     complete : function(jqXHR, status) {
 
                         var response = JSON.parse(jqXHR.responseText);
-                        var list = [];
-                        var data = new google.visualization.DataTable();
 
-                        // Declare columns
-                        data.addColumn('datetime', 'Time');
-                        data.addColumn('number', 'Count');
-
-                        for(var i in response) {
-                            list[list.length] =
-                                [new Date(response[i].logTime), response[i].count];
-                        }
-
-                        data.addRows(list);
-
-                        var options = {
-                          title: 'Server Visits',
-                          titleTextStyle: {color: 'white'},
-                          animation: {
-                            duration: 2000,
-                            easing: 'in'
-                          },
-                          series: [{color: '#516f3a'}],
-                          backgroundColor: '#252525',
-                          vAxis: {
-                            gridlines: {color: '#745d50'},
-                            textStyle: {color: '#745d50'}
-                          },
-                          hAxis: {
-                            gridlines: {color: '#745d50'},
-                            textStyle: {color: '#745d50'}
-                          },
-                          legend: {
-                            textStyle: {color: '#745d50'}
-                          }
-                        };
-
-                        var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
-                        chart.draw(data, options);
-
+                        drawChart(response);
 
                     }
                 });
+
+            });
+
+
+
+            function drawChart(response) {
+
+                var list = [];
+                var data = new google.visualization.DataTable();
+
+                // Declare columns
+                data.addColumn('datetime', 'Time');
+                data.addColumn('number', 'Count');
+
+                for(var i in response) {
+                    list[list.length] =
+                        [new Date(response[i].logTime), response[i].count];
+                }
+
+                data.addRows(list);
+
+                var options = {
+                    title: 'Server Visits',
+                    titleTextStyle: {color: 'white'},
+                    animation: {
+                        duration: 2000,
+                        easing: 'in'
+                    },
+                    series: [{color: '#516f3a'}],
+                    backgroundColor: '#252525',
+                    vAxis: {
+                        gridlines: {color: '#745d50'},
+                        textStyle: {color: '#745d50'}
+                    },
+                    hAxis: {
+                        gridlines: {color: '#745d50'},
+                        textStyle: {color: '#745d50'}
+                    },
+                    legend: {
+                        textStyle: {color: '#745d50'}
+                    }
+                };
+
+                var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+                chart.draw(data, options);
+
             }
 
 

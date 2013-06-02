@@ -56,7 +56,7 @@ public class PlayerStatsControllerTest {
         assertNull(o);
     }
 
-
+    @Test
     public void testGetActiveStatus() throws Exception {
 
     }

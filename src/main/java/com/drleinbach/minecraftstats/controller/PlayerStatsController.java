@@ -38,6 +38,7 @@ public class PlayerStatsController {
 
     private static final Logger LOGGER = Logger.getLogger(PlayerStatsController.class);
     private static final Properties PROPERTIES = new Properties();
+    private static FullStats stats;
     private static String handshake;
 
     static {
@@ -57,31 +58,14 @@ public class PlayerStatsController {
     private AllPlayerStatusDAO statsDAO;
 
     @RequestMapping(value = "/logged-in")
-    public void getLoggedIn(HttpServletResponse response) {
+    @ResponseBody
+    public Object getLoggedIn() {
         LOGGER.info("Start getLoggedIn");
-        response.setCharacterEncoding("UTF-8");
-        response.setContentType("text/event-stream");
-        response.setHeader("Cache-Control", "no-cache");
 
         List<AllPlayerStatus> players = statsDAO.getLoggedIn();
         LOGGER.info("Got Logged In Users");
 
-        ObjectMapper om = new ObjectMapper();
-
-        try {
-            PrintWriter writer = response.getWriter();
-            writer.write("retry: 30000\n");
-            writer.write("data:" + om.writeValueAsString(players) + "\n\n");
-            writer.flush();
-            writer.close();
-
-        } catch (Exception e) {
-            LOGGER.error("Exception has occurred", e);
-        } finally {
-            LOGGER.info("End getLoggedIn");
-        }
-
-
+        return players;
     }
 
     /**
@@ -103,6 +87,53 @@ public class PlayerStatsController {
         return null;
     }
 
+    @RequestMapping(value = "/sse", method = RequestMethod.GET)
+    public void serverSentEvent(HttpServletResponse response) {
+        try {
+            boolean changed = false;
+            LOGGER.debug("Start event loop");
+            while (!changed) {
+                Object tmp = getActiveStatus();
+                LOGGER.debug("Active Status: " + tmp);
+                if (tmp instanceof FullStats) {
+                    LOGGER.debug("Status is FullStats");
+                    FullStats newStats = (FullStats) tmp;
+
+                    if (stats == null || !stats.equals(newStats)) {
+                        LOGGER.debug("Stats have changed");
+                        stats = newStats;
+
+                        ObjectMapper om = new ObjectMapper();
+                        PrintWriter writer = response.getWriter();
+
+
+                        response.setCharacterEncoding("UTF-8");
+                        response.setContentType("text/event-stream");
+                        response.setHeader("Cache-Control", "no-cache");
+
+                        writer.write("event:'running'");
+                        writer.write("data:" + om.writeValueAsString(stats) + "\n");
+                        writer.write("event:'logged-in'");
+                        writer.write("data:" + om.writeValueAsString(getLoggedIn()) + "\n");
+                        writer.write("event:'frequency'");
+                        writer.write("data:" + om.writeValueAsString(getFrequency()) + "\n\n");
+
+                        writer.flush();
+                        writer.close();
+
+                        changed = true;
+                    } else {
+                        LOGGER.debug("Stats were not new");
+                        Thread.sleep(10000);
+                    }
+
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Error occured", e);
+        }
+    }
+
     /**
      * Handles a POST request to the get the active status of the server.
      *
@@ -112,7 +143,10 @@ public class PlayerStatsController {
     @ResponseBody
     public Object getActiveStatus() {
 
+
         try {
+
+            boolean changed = false;
 
             String message = getHandshake();
             LOGGER.debug("Handshake Dump: " + message);
@@ -124,8 +158,9 @@ public class PlayerStatsController {
 
             message = getStatsQuery(challenge);
             final byte[] query = getResponse(message);
-            FullStats.getFullStats(new String(query).trim().split("\0"));
-            return true;
+            FullStats tmpStats = FullStats.getFullStats(new String(query).trim().split("\0"));
+
+            return tmpStats;
 
         } catch (SocketTimeoutException e) {
             LOGGER.error("Socket timed out");
